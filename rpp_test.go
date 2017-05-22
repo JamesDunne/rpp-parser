@@ -1,10 +1,10 @@
 package rpp
 
 import (
-	"testing"
-	"os"
 	"bufio"
 	"fmt"
+	"os"
+	"testing"
 )
 
 func TestParseRPP(t *testing.T) {
@@ -19,12 +19,21 @@ func TestParseRPP(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dump(project, "")
-}
-
-func dump(node *RPP, indent string) {
-	fmt.Printf("%s%s\n", indent, node.Name)
-	for _, child := range node.Children {
-		dump(child, indent + "  ")
-	}
+	(func(project *Project, indent string) {
+		fmt.Printf("%s%s\n", indent, project.Name)
+		for _, track := range project.Tracks {
+			fmt.Printf("%s%s\n", indent, track.Name)
+			(func(track *Track, indent string) {
+				if track.FXChain != nil {
+					for _, fx := range track.FXChain.FX {
+						if fx.VST != nil {
+							fmt.Printf("%s%s\n", indent, fx.VST.Path)
+						} else if fx.JS != nil {
+							fmt.Printf("%s%s\n", indent, fx.JS.Path)
+						}
+					}
+				}
+			})(track, indent + "  ")
+		}
+	})(project, "")
 }
