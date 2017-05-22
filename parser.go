@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"strconv"
 )
 
 type rppParser struct {
@@ -47,26 +48,82 @@ func (parser *rppParser) grabLine() (err error) {
 	return nil
 }
 
+func (parser *rppParser) skipWhitespace() {
+	i := parser.trim_i
+	w := 0
+
+	for ; i < len(parser.trim_line); i += w {
+		c, width := utf8.DecodeRuneInString(parser.trim_line[i:])
+		w = width
+
+		if !unicode.IsSpace(c) {
+			break
+		}
+	}
+
+	parser.trim_i = i
+}
+
 func (parser *rppParser) parseWord() string {
 	i := parser.trim_i
 	w := 0
 	start := i
+	end := -1
+
+	if i >= len(parser.trim_line) {
+		return ""
+	}
+
+	// Determine if quoted string or not
+	var inQuotes bool = false
+	c, width := utf8.DecodeRuneInString(parser.trim_line[i:])
+	if c == '"' {
+		start++
+		inQuotes = true
+		i += width
+	}
+
+	for ; i < len(parser.trim_line); i += w {
+		c, width := utf8.DecodeRuneInString(parser.trim_line[i:])
+		w = width
+
+		if inQuotes {
+			if c == '"' {
+				end = i
+				i += width
+				break
+			}
+		} else if unicode.IsSpace(c) {
+			end = i
+			break
+		}
+	}
+	if end == -1 {
+		end = i
+	}
+	parser.trim_i = i
+
+	return parser.trim_line[start:end]
+}
+
+func (parser *rppParser) parseNumber() string {
+	i := parser.trim_i
+	w := 0
+	start := i
+	end := -1
 
 	for ; i < len(parser.trim_line); i += w {
 		c, width := utf8.DecodeRuneInString(parser.trim_line[i:])
 		w = width
 
 		if unicode.IsSpace(c) {
+			end = i
 			break
 		}
 	}
 	parser.trim_i = i
 
-	return parser.trim_line[start:parser.trim_i]
-}
-
-func (parser *rppParser) parseNumber() string {
-	return ""
+	return parser.trim_line[start:end]
 }
 
 func (parser *rppParser) parseProject() (project *Project, err error) {
@@ -110,7 +167,6 @@ func (parser *rppParser) parseProject() (project *Project, err error) {
 				}
 				project.Tracks = append(project.Tracks, track)
 			} else {
-				fmt.Printf("%s\n", name)
 				parser.skipUnknownBlock()
 			}
 		}
@@ -197,6 +253,12 @@ func (parser *rppParser) parseTrack() (track *Track, err error) {
 			}
 			continue
 		}
+
+		if directive == "NAME" {
+			parser.skipWhitespace()
+			track.Name = parser.parseWord()
+			fmt.Printf("NAME = '%s'\n", track.Name)
+		}
 	}
 
 	return
@@ -207,10 +269,10 @@ func (parser *rppParser) parseFXChain() (chain *FXChain, err error) {
 		return nil, fmt.Errorf("Expected '<'")
 	}
 
-	chain, err = &FXChain{}, nil
+	chain, err = &FXChain{FX: make([]*FX, 0, 10)}, nil
 	parser.expected_indent += 2
 
-	//var fx *FX = nil
+	var fx *FX = nil
 
 	for {
 		if err = parser.grabLine(); err != nil {
@@ -230,19 +292,36 @@ func (parser *rppParser) parseFXChain() (chain *FXChain, err error) {
 			return
 		}
 
-		name := parser.parseWord()
+		directive := parser.parseWord()
 
-		if name[0] == '<' {
-			//if name == "VST" {
-			//	var vst *VST
-			//	vst, err = parser.parseVST()
-			//	if err != nil {
-			//		return
-			//	}
-			//	//fx.VST = vst
-			//}
-			parser.skipUnknownBlock()
+		if directive[0] == '<' {
+			name := directive[1:]
+			if name == "VST" {
+				//var vst *VST
+				//vst, err = parser.parseVST()
+				//if err != nil {
+				//	return
+				//}
+				//fx.VST = vst
+				parser.skipUnknownBlock()
+			} else {
+				parser.skipUnknownBlock()
+			}
 			continue
+		}
+
+		if directive == "BYPASS" {
+			parser.skipWhitespace()
+			bypassStr := parser.parseNumber()
+			bypassInt, err1 := strconv.ParseInt(bypassStr, 10, 64)
+			if err != nil {
+				return chain, err1
+			}
+			fx = &FX{
+				Bypass: bypassInt != 0,
+			}
+			chain.FX = append(chain.FX, fx)
+			fmt.Printf("BYPASS = '%s'\n", bypassStr)
 		}
 	}
 
