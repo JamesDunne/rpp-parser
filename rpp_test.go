@@ -10,7 +10,7 @@ import (
 )
 
 func TestParseRPP(t *testing.T) {
-	f, err := os.Open("/Users/jimdunne/Desktop/band/20170517/R1320.RPP")
+	f, err := os.Open("/Users/jimdunne/Desktop/band/20170517/R1322.RPP")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,10 +54,11 @@ func TestParseRPP(t *testing.T) {
 									freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
 									z += 8
 									pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+									gain := math.Log10(pct) * 20
 									z += 8
 									q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
 									z += 8
-									fmt.Printf("freq=%g, pct=%g, q=%g\n", freq, pct, q)
+									fmt.Printf("freq=%6.1f, gain=%5.2f dB, q=%5.3f\n", freq, gain, q)
 									z += 9
 								}
 								fmt.Printf("\n")
