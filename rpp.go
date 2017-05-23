@@ -3,12 +3,12 @@ package rpp
 type VST struct {
 	Name string
 	Path string
-	Data [][]byte
+	Data []byte
 }
 
 type JS struct {
-	Name string
-	Path string
+	Name       string
+	Path       string
 	Parameters []*float64
 }
 
@@ -23,11 +23,11 @@ type FXChain struct {
 }
 
 type Track struct {
-	Name string
-	Volume float64
-	Pan float64
+	Name        string
+	Volume      float64
+	Pan         float64
 	InvertPhase bool
-	FXChain *FXChain
+	FXChain     *FXChain
 }
 
 type Project struct {

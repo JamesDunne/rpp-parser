@@ -2,12 +2,12 @@ package rpp
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
-	"strconv"
-	"encoding/base64"
 )
 
 type rppParser struct {
@@ -339,7 +339,7 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 	vst.Name = parser.parseWord()
 	parser.skipWhitespace()
 	vst.Path = parser.parseWord()
-	vst.Data = make([][]byte, 0, 4)
+	vst.Data = make([]byte, 0, 1024)
 
 	parser.expected_indent += 2
 
@@ -365,7 +365,7 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 		if errDecode != nil {
 			return vst, errDecode
 		}
-		vst.Data = append(vst.Data, data)
+		vst.Data = append(vst.Data, data...)
 	}
 
 	return
