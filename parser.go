@@ -9,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 	"encoding/binary"
+	"math"
 )
 
 type rppParser struct {
@@ -381,6 +382,37 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 	z += 4
 	z += 8
 	vst.Data = vst.Data[z:z+size]
+
+	if vst.Path == "reaeq.vst.dylib" {
+		vst.ReaEQ = &ReaEQ{}
+		data := vst.Data
+		z := 0
+		_ = binary.LittleEndian.Uint32(data[z : z+4])
+		z += 4
+		bands := binary.LittleEndian.Uint32(data[z : z+4])
+		_ = bands
+		z += 4
+		_ = binary.LittleEndian.Uint32(data[z : z+4])
+		z += 4
+		_ = binary.LittleEndian.Uint32(data[z : z+4])
+		z += 4
+
+		vst.ReaEQ.Bands = make([]ReaEQBand, 0, bands)
+		//fmt.Printf("%s%2X\n", indent, data[z:])
+		for band := uint32(0); band < bands; band++ {
+			freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+			z += 8
+			pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+			gain := math.Log10(pct) * 20
+			z += 8
+			q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+			z += 8
+			//fmt.Printf("freq=%6.1f Hz, gain=%5.2f dB, q=%5.3f\n", freq, gain, q)
+			vst.ReaEQ.Bands = append(vst.ReaEQ.Bands, ReaEQBand{Frequency:freq, Gain:gain, Q:q})
+			z += 9
+		}
+		//fmt.Printf("\n")
+	}
 
 	return
 }

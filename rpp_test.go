@@ -2,9 +2,7 @@ package rpp
 
 import (
 	"bufio"
-	"encoding/binary"
 	"fmt"
-	"math"
 	"os"
 	"testing"
 )
@@ -35,34 +33,40 @@ func TestParseRPP(t *testing.T) {
 						if fx.VST != nil {
 							data := fx.VST.Data
 							fmt.Printf("%s%s\n", indent, fx.VST.Path)
-							fmt.Printf("%s%2X\n", indent, data)
-
-							if fx.VST.Path == "reaeq.vst.dylib" {
-								z := 0
-								_ = binary.LittleEndian.Uint32(data[z : z+4])
-								z += 4
-								bands := binary.LittleEndian.Uint32(data[z : z+4])
-								_ = bands
-								z += 4
-								_ = binary.LittleEndian.Uint32(data[z : z+4])
-								z += 4
-								_ = binary.LittleEndian.Uint32(data[z : z+4])
-								z += 4
-
-								//fmt.Printf("%s%2X\n", indent, data[z:])
-								for band := uint32(0); band < bands; band++ {
-									freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-									z += 8
-									pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-									gain := math.Log10(pct) * 20
-									z += 8
-									q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-									z += 8
-									fmt.Printf("freq=%6.1f, gain=%5.2f dB, q=%5.3f\n", freq, gain, q)
-									z += 9
+							if fx.VST.ReaEQ != nil {
+								for i, band := range fx.VST.ReaEQ.Bands {
+									fmt.Printf("%s[%d] freq=%6.1f Hz, gain=%5.2f dB, q=%5.3f\n", indent, i, band.Frequency, band.Gain, band.Q)
 								}
-								fmt.Printf("\n")
+							} else {
+								fmt.Printf("%s%2X\n", indent, data)
 							}
+							//
+							//if fx.VST.Path == "reaeq.vst.dylib" {
+							//	z := 0
+							//	_ = binary.LittleEndian.Uint32(data[z : z+4])
+							//	z += 4
+							//	bands := binary.LittleEndian.Uint32(data[z : z+4])
+							//	_ = bands
+							//	z += 4
+							//	_ = binary.LittleEndian.Uint32(data[z : z+4])
+							//	z += 4
+							//	_ = binary.LittleEndian.Uint32(data[z : z+4])
+							//	z += 4
+							//
+							//	//fmt.Printf("%s%2X\n", indent, data[z:])
+							//	for band := uint32(0); band < bands; band++ {
+							//		freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+							//		z += 8
+							//		pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+							//		gain := math.Log10(pct) * 20
+							//		z += 8
+							//		q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+							//		z += 8
+							//		fmt.Printf("freq=%6.1f Hz, gain=%5.2f dB, q=%5.3f\n", freq, gain, q)
+							//		z += 9
+							//	}
+							//	fmt.Printf("\n")
+							//}
 						} else if fx.JS != nil {
 							fmt.Printf("%s%s\n", indent, fx.JS.Path)
 						}

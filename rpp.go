@@ -1,9 +1,21 @@
 package rpp
 
+type ReaEQBand struct {
+	Frequency float64
+	Gain float64
+	Q float64
+}
+
+type ReaEQ struct {
+	Bands []ReaEQBand
+}
+
 type VST struct {
 	Name string
 	Path string
 	Data []byte
+
+	ReaEQ *ReaEQ
 }
 
 type JS struct {
