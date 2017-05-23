@@ -398,7 +398,6 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 		z += 4
 
 		vst.ReaEQ.Bands = make([]ReaEQBand, 0, bands)
-		//fmt.Printf("%s%2X\n", indent, data[z:])
 		for band := uint32(0); band < bands; band++ {
 			freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
 			z += 8
@@ -407,11 +406,9 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 			z += 8
 			q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
 			z += 8
-			//fmt.Printf("freq=%6.1f Hz, gain=%5.2f dB, q=%5.3f\n", freq, gain, q)
 			vst.ReaEQ.Bands = append(vst.ReaEQ.Bands, ReaEQBand{Frequency:freq, Gain:gain, Q:q})
 			z += 9
 		}
-		//fmt.Printf("\n")
 	}
 
 	return

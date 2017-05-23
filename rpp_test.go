@@ -35,7 +35,7 @@ func TestParseRPP(t *testing.T) {
 							fmt.Printf("%s%s\n", indent, fx.VST.Path)
 							if fx.VST.ReaEQ != nil {
 								for i, band := range fx.VST.ReaEQ.Bands {
-									fmt.Printf("%s[%d] freq=%6.1f Hz, gain=%5.2f dB, q=%5.3f\n", indent, i, band.Frequency, band.Gain, band.Q)
+									fmt.Printf("%s[%d] freq=%7.1f Hz, gain=%6.2f dB, q=%5.3f, bw=%5.3f\n", indent, i, band.Frequency, band.Gain, band.Q, band.Bandwidth())
 								}
 							} else {
 								fmt.Printf("%s%2X\n", indent, data)

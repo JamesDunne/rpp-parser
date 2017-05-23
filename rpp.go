@@ -1,9 +1,17 @@
 package rpp
 
+import "math"
+
 type ReaEQBand struct {
 	Frequency float64
 	Gain float64
 	Q float64
+}
+
+func (band ReaEQBand) Bandwidth() float64 {
+	q_sqr := band.Q * band.Q
+	bw := math.Log2((2.0*q_sqr+1.0)/(2.0*q_sqr) + math.Sqrt(math.Pow((2.0*q_sqr+1.0)/q_sqr, 2.0)/4.0-1.0))
+	return bw
 }
 
 type ReaEQ struct {
