@@ -3,13 +3,13 @@ package rpp
 import (
 	"bufio"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
-	"encoding/binary"
-	"math"
 )
 
 type rppParser struct {
@@ -261,6 +261,18 @@ func (parser *rppParser) parseTrack() (track *Track, err error) {
 			parser.skipWhitespace()
 			track.Name = parser.parseWord()
 			//fmt.Printf("NAME = '%s'\n", track.Name)
+		} else if directive == "VOLPAN" {
+			parser.skipWhitespace()
+			track.Volume, err = strconv.ParseFloat(parser.parseNumber(), 64)
+			if err != nil {
+				return
+			}
+			track.Volume = VolumeToDB(track.Volume)
+			parser.skipWhitespace()
+			track.Pan, err = strconv.ParseFloat(parser.parseNumber(), 64)
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -372,16 +384,16 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 
 	// Parse out the Reaper inputs/outputs mappings
 	z := uint32(8)
-	num_inputs := binary.LittleEndian.Uint32(vst.Data[z:z+4])
-	z += uint32(4)
-	z += num_inputs * uint32(8)
-	num_outputs := binary.LittleEndian.Uint32(vst.Data[z:z+4])
+	num_inputs := binary.LittleEndian.Uint32(vst.Data[z : z+4])
+	z += 4
+	z += num_inputs * 8
+	num_outputs := binary.LittleEndian.Uint32(vst.Data[z : z+4])
 	z += 4
 	z += num_outputs * 8
-	size := binary.LittleEndian.Uint32(vst.Data[z:z+4])
+	size := binary.LittleEndian.Uint32(vst.Data[z : z+4])
 	z += 4
 	z += 8
-	vst.Data = vst.Data[z:z+size]
+	vst.Data = vst.Data[z : z+size]
 
 	if vst.Path == "reaeq.vst.dylib" {
 		vst.ReaEQ = &ReaEQ{}
@@ -402,11 +414,11 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 			freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
 			z += 8
 			pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-			gain := math.Log10(pct) * 20
+			gain := VolumeToDB(pct)
 			z += 8
 			q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
 			z += 8
-			vst.ReaEQ.Bands = append(vst.ReaEQ.Bands, ReaEQBand{Frequency:freq, Gain:gain, Q:q})
+			vst.ReaEQ.Bands = append(vst.ReaEQ.Bands, ReaEQBand{Frequency: freq, Gain: gain, Bandwidth: q})
 			z += 9
 		}
 	}

@@ -4,14 +4,18 @@ import "math"
 
 type ReaEQBand struct {
 	Frequency float64
-	Gain float64
-	Q float64
+	Gain      float64
+	Bandwidth float64
 }
 
-func (band ReaEQBand) Bandwidth() float64 {
-	q_sqr := band.Q * band.Q
-	bw := math.Log2((2.0*q_sqr+1.0)/(2.0*q_sqr) + math.Sqrt(math.Pow((2.0*q_sqr+1.0)/q_sqr, 2.0)/4.0-1.0))
-	return bw
+func (band ReaEQBand) Q() float64 {
+	// SQRT(POWER(2,bw)) / (POWER(2,bw)-1)
+	bw_2 := math.Pow(2.0, band.Bandwidth)
+	return math.Sqrt(bw_2) / (bw_2 - 1.0)
+}
+
+func VolumeToDB(p float64) float64 {
+	return math.Log10(p) * 20.0
 }
 
 type ReaEQ struct {

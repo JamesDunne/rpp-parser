@@ -19,60 +19,31 @@ func TestParseRPP(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	(func(project *Project, indent string) {
-		fmt.Printf("%s%s\n", indent, project.Name)
-		for _, track := range project.Tracks {
-			fmt.Printf("%s%s\n", indent, track.Name)
-			if track.Name == "Print" {
-				continue
-			}
-
-			(func(track *Track, indent string) {
-				if track.FXChain != nil {
-					for _, fx := range track.FXChain.FX {
-						if fx.VST != nil {
-							data := fx.VST.Data
-							fmt.Printf("%s%s\n", indent, fx.VST.Path)
-							if fx.VST.ReaEQ != nil {
-								for i, band := range fx.VST.ReaEQ.Bands {
-									fmt.Printf("%s[%d] freq=%7.1f Hz, gain=%6.2f dB, q=%5.3f, bw=%5.3f\n", indent, i, band.Frequency, band.Gain, band.Q, band.Bandwidth())
-								}
-							} else {
-								fmt.Printf("%s%2X\n", indent, data)
-							}
-							//
-							//if fx.VST.Path == "reaeq.vst.dylib" {
-							//	z := 0
-							//	_ = binary.LittleEndian.Uint32(data[z : z+4])
-							//	z += 4
-							//	bands := binary.LittleEndian.Uint32(data[z : z+4])
-							//	_ = bands
-							//	z += 4
-							//	_ = binary.LittleEndian.Uint32(data[z : z+4])
-							//	z += 4
-							//	_ = binary.LittleEndian.Uint32(data[z : z+4])
-							//	z += 4
-							//
-							//	//fmt.Printf("%s%2X\n", indent, data[z:])
-							//	for band := uint32(0); band < bands; band++ {
-							//		freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-							//		z += 8
-							//		pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-							//		gain := math.Log10(pct) * 20
-							//		z += 8
-							//		q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
-							//		z += 8
-							//		fmt.Printf("freq=%6.1f Hz, gain=%5.2f dB, q=%5.3f\n", freq, gain, q)
-							//		z += 9
-							//	}
-							//	fmt.Printf("\n")
-							//}
-						} else if fx.JS != nil {
-							fmt.Printf("%s%s\n", indent, fx.JS.Path)
-						}
-					}
-				}
-			})(track, indent+"  ")
+	for _, track := range project.Tracks {
+		fmt.Printf("%s\n", track.Name)
+		if track.Name == "Print" {
+			continue
 		}
-	})(project, "")
+		fmt.Printf("  Volume = %f\n", track.Volume)
+		fmt.Printf("  Pan = %f\n", track.Pan)
+
+		if track.FXChain != nil {
+			fmt.Printf("  FX\n")
+			for _, fx := range track.FXChain.FX {
+				if fx.VST != nil {
+					data := fx.VST.Data
+					fmt.Printf("    %s\n", fx.VST.Path)
+					if fx.VST.ReaEQ != nil {
+						for i, band := range fx.VST.ReaEQ.Bands {
+							fmt.Printf("      [%d] freq=%7.1f Hz, gain=%6.2f dB, bw=%5.3f, q=%5.3f\n", i, band.Frequency, band.Gain, band.Bandwidth, band.Q())
+						}
+					} else {
+						fmt.Printf("      %2X\n", data)
+					}
+				} else if fx.JS != nil {
+					fmt.Printf("    %s\n", fx.JS.Path)
+				}
+			}
+		}
+	}
 }
