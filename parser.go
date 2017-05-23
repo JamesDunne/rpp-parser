@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"encoding/binary"
 )
 
 type rppParser struct {
@@ -348,7 +349,7 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 			return
 		}
 		if parser.isEOF {
-			return
+			break
 		}
 
 		// Close current:
@@ -358,7 +359,7 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 				return
 			}
 			parser.expected_indent -= 2
-			return
+			break
 		}
 
 		data, errDecode := base64.StdEncoding.DecodeString(parser.trim_line)
@@ -367,6 +368,19 @@ func (parser *rppParser) parseVST() (vst *VST, err error) {
 		}
 		vst.Data = append(vst.Data, data...)
 	}
+
+	// Parse out the Reaper inputs/outputs mappings
+	z := uint32(8)
+	num_inputs := binary.LittleEndian.Uint32(vst.Data[z:z+4])
+	z += uint32(4)
+	z += num_inputs * uint32(8)
+	num_outputs := binary.LittleEndian.Uint32(vst.Data[z:z+4])
+	z += 4
+	z += num_outputs * 8
+	size := binary.LittleEndian.Uint32(vst.Data[z:z+4])
+	z += 4
+	z += 8
+	vst.Data = vst.Data[z:z+size]
 
 	return
 }

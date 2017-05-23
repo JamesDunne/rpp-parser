@@ -2,14 +2,11 @@ package rpp
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
+	"math"
 	"os"
 	"testing"
-	//"math"
-	//"encoding/binary"
-	//"unsafe"
-	//"encoding/binary"
-	"unicode"
 )
 
 func TestParseRPP(t *testing.T) {
@@ -36,27 +33,34 @@ func TestParseRPP(t *testing.T) {
 				if track.FXChain != nil {
 					for _, fx := range track.FXChain.FX {
 						if fx.VST != nil {
+							data := fx.VST.Data
 							fmt.Printf("%s%s\n", indent, fx.VST.Path)
-							fmt.Printf("%s%2X\n", indent, fx.VST.Data)
+							fmt.Printf("%s%2X\n", indent, data)
 
 							if fx.VST.Path == "reaeq.vst.dylib" {
-								for i := 0; i < len(fx.VST.Data); i++ {
-									if i&3 == 0 {
-										fmt.Print(" ")
-									}
-									if !unicode.IsPrint(rune(fx.VST.Data[i])) {
-										fmt.Print(".")
-										continue
-									}
-									fmt.Printf("%c", rune(fx.VST.Data[i]))
-									//ui := binary.LittleEndian.Uint32(data[i:i + 4])
-									//fmt.Printf("%d, ", ui)
-									//flip := binary.BigEndian.Uint32(fx.VST.Data[0][i:i+4])
-									//f0 := *(*float32)(unsafe.Pointer(&flip))
-									//fmt.Printf("  [%d] = %v\n", i, f0)
+								z := 0
+								_ = binary.LittleEndian.Uint32(data[z : z+4])
+								z += 4
+								bands := binary.LittleEndian.Uint32(data[z : z+4])
+								_ = bands
+								z += 4
+								_ = binary.LittleEndian.Uint32(data[z : z+4])
+								z += 4
+								_ = binary.LittleEndian.Uint32(data[z : z+4])
+								z += 4
+
+								//fmt.Printf("%s%2X\n", indent, data[z:])
+								for band := uint32(0); band < bands; band++ {
+									freq := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+									z += 8
+									pct := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+									z += 8
+									q := math.Float64frombits(binary.LittleEndian.Uint64(data[z : z+8]))
+									z += 8
+									fmt.Printf("freq=%g, pct=%g, q=%g\n", freq, pct, q)
+									z += 9
 								}
 								fmt.Printf("\n")
-
 							}
 						} else if fx.JS != nil {
 							fmt.Printf("%s%s\n", indent, fx.JS.Path)
