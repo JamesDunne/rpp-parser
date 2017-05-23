@@ -7,6 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 	"strconv"
+	"encoding/base64"
 )
 
 type rppParser struct {
@@ -43,7 +44,7 @@ func (parser *rppParser) grabLine() (err error) {
 	parser.trim_i = 0
 	parser.actual_indent = len(parser.line) - len(parser.trim_line)
 
-	fmt.Printf("line[%d]=%v\n", parser.actual_indent, parser.trim_line)
+	//fmt.Printf("line[%d]=%v\n", parser.actual_indent, parser.trim_line)
 
 	return nil
 }
@@ -257,7 +258,7 @@ func (parser *rppParser) parseTrack() (track *Track, err error) {
 		if directive == "NAME" {
 			parser.skipWhitespace()
 			track.Name = parser.parseWord()
-			fmt.Printf("NAME = '%s'\n", track.Name)
+			//fmt.Printf("NAME = '%s'\n", track.Name)
 		}
 	}
 
@@ -297,13 +298,13 @@ func (parser *rppParser) parseFXChain() (chain *FXChain, err error) {
 		if directive[0] == '<' {
 			name := directive[1:]
 			if name == "VST" {
-				//var vst *VST
-				//vst, err = parser.parseVST()
-				//if err != nil {
-				//	return
-				//}
-				//fx.VST = vst
-				parser.skipUnknownBlock()
+				var vst *VST
+				vst, err = parser.parseVST()
+				if err != nil {
+					return
+				}
+				fx.VST = vst
+				//parser.skipUnknownBlock()
 			} else {
 				parser.skipUnknownBlock()
 			}
@@ -321,8 +322,50 @@ func (parser *rppParser) parseFXChain() (chain *FXChain, err error) {
 				Bypass: bypassInt != 0,
 			}
 			chain.FX = append(chain.FX, fx)
-			fmt.Printf("BYPASS = '%s'\n", bypassStr)
+			//fmt.Printf("BYPASS = '%s'\n", bypassStr)
 		}
+	}
+
+	return
+}
+
+func (parser *rppParser) parseVST() (vst *VST, err error) {
+	if parser.trim_line[0] != '<' {
+		return nil, fmt.Errorf("Expected '<'")
+	}
+
+	vst, err = &VST{}, nil
+	parser.skipWhitespace()
+	vst.Name = parser.parseWord()
+	parser.skipWhitespace()
+	vst.Path = parser.parseWord()
+	vst.Data = make([][]byte, 0, 4)
+
+	parser.expected_indent += 2
+
+	for {
+		if err = parser.grabLine(); err != nil {
+			return
+		}
+		if parser.isEOF {
+			return
+		}
+
+		// Close current:
+		if parser.trim_line[0] == '>' {
+			if parser.actual_indent != parser.expected_indent-2 {
+				err = fmt.Errorf("Invalid indentation for closing '>' char")
+				return
+			}
+			parser.expected_indent -= 2
+			return
+		}
+
+		data, errDecode := base64.StdEncoding.DecodeString(parser.trim_line)
+		if errDecode != nil {
+			return vst, errDecode
+		}
+		vst.Data = append(vst.Data, data)
 	}
 
 	return
