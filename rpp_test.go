@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseRPP(t *testing.T) {
-	f, err := os.Open("/Users/jimdunne/Desktop/band/20170726/R1375.RPP")
+	f, err := os.Open("R1391.RPP")
 	if err != nil {
 		t.Fatal(err)
 	}
