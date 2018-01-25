@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseRPP(t *testing.T) {
-	f, err := os.Open("R1391.RPP")
+	f, err := os.Open("R1425.RPP")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,8 +34,9 @@ func TestParseRPP(t *testing.T) {
 					data := fx.VST.Data
 					fmt.Printf("    %s\n", fx.VST.Path)
 					if fx.VST.ReaEQ != nil {
-						for i, band := range fx.VST.ReaEQ.Bands {
-							fmt.Printf("      [%d] freq=%7.1f Hz, gain=%6.2f dB, bw=%5.3f, q=%6.3f\n", i, band.Frequency, band.Gain, band.Bandwidth, band.Q())
+						for _, band := range fx.VST.ReaEQ.Bands {
+							//fmt.Printf("      [%d] freq=%7.1f Hz, gain=%6.2f dB, bw=%5.3f, q=%6.3f\n", i, band.Frequency, band.Gain, band.Bandwidth, band.Q())
+							fmt.Printf("      {\"freq\":%f, \"gain\":%f, \"q\":%f},\n", band.Frequency, band.Gain, band.Q())
 						}
 					} else {
 						fmt.Printf("      %2X\n", data)
